@@ -158,6 +158,14 @@ def main(args):
 
         # PROBABILITIES
         X_logprob = gf_model.model.log_prob(X_data)
+
+        plot_2d_joint_probs(
+            X_data.detach().numpy(),
+            probs=X_logprob.numpy(),
+            wandb_logger=wandb_logger.experiment,
+            log_name="log_probs",
+            # save=str(save_path.joinpath("latent_trained.png")),
+        )
         plot_2d_joint_probs(
             X_data.detach().numpy(),
             probs=X_logprob.exp().numpy(),
@@ -194,7 +202,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--n-train",
         type=int,
-        default=2_000,
+        default=5_000,
         help="Number of training samples",
     )
     parser.add_argument(
