@@ -1,10 +1,13 @@
-import pytorch-lightning as pl
+import pytorch_lightning as pl
 import torch
+from nflows.flows import Flow
+from pytorch_lightning import Trainer
 
-class NFLearner(pl.LightningModule):
-    def __init__(self, model, hparams):
+
+class Gaussianization1D(pl.LightningModule):
+    def __init__(self, transform, base_distribution, hparams):
         super().__init__()
-        self.model = model
+        self.model = Flow(transform=transform, distribution=base_distribution)
         self.hparams = hparams
 
     def forward(self, x):
@@ -28,5 +31,5 @@ class NFLearner(pl.LightningModule):
             [
                 {"params": self.model.parameters()},
             ],
-            lr=self.hparams["lr"],
+            lr=self.hparams.lr,
         )

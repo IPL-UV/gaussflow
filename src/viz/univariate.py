@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import stats
 import seaborn as sns
+from scipy import stats
 
 sns.set_context(context="talk", font_scale=0.7)
 

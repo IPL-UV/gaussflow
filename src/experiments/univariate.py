@@ -1,17 +1,21 @@
-from src.data.toy import gen_bimodal_data
-from src.viz.univariate import plot_hist
+import os
 from argparse import ArgumentParser
 from pathlib import Path
-from src.models.gaussianization import get_marginalization_transform
-import os
+
+import torch
+from nflows import distributions
 from pyprojroot import here
+
+from src.data.toy import gen_bimodal_data
+from src.models.flows import Gaussianization1D
+from src.models.gaussianization import get_marginalization_transform
+from src.viz.univariate import plot_hist
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 root = here(project_files=[".here"])
-import wandb
-
 import tqdm
+import wandb
 
 home = str(Path.home())
 
@@ -21,6 +25,8 @@ save_path = Path(root).joinpath("reports/figures/experiments/univariate")
 def main(args):
 
     X_samples = gen_bimodal_data(args.n_train)
+
+    n_features = 1
 
     # plot data samples
     plot_hist(
@@ -32,10 +38,13 @@ def main(args):
 
     # get marginal transformation
     mg_trans = get_marginalization_transform(
-        n_features=1, squash=args.squash, num_bins=args.n_bins
+        n_features=n_features, squash=args.squash, num_bins=args.n_bins
     )
 
-    # base distribution
+    # initialize NF trainer
+    gf_model = Gaussianization1D(
+        mg_trans, base_distribution=distributions.StandardNormal(shape=[n_features])
+    )
     pass
 
 
@@ -65,6 +74,15 @@ if __name__ == "__main__":
         type=int,
         default=10,
         help="Number of bins for spline transformation",
+    )
+    # ======================
+    # Training Params
+    # ======================
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=1e-2,
+        help="Learning Rate",
     )
     # ======================
     # Testing
