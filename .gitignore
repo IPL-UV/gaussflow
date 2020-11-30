@@ -130,3 +130,5 @@ MNIST
 
 /data/
 reports/figures/
+\wandb/
+*.ckpt
