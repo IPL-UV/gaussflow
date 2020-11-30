@@ -1,0 +1,55 @@
+name: gaussflow-gpu
+channels:
+- defaults
+- pytorch
+- conda-forge
+dependencies:
+- python=3.8
+# Standard Libraries
+- numpy>=1.19            # Numerical Linear Algebra
+- scipy>=1.5             # Scientific Computing
+- xarray>=0.16           # Data structures
+- pandas>=1.1            # Data structure
+- scikit-learn>0.23      # Machine Learning
+- scikit-image>0.17      # Image Processing
+# Plotting Libraries
+- matplotlib>=3.3        # standard plotting library
+- conda-forge::cartopy>=0.18
+- seaborn>=0.11          # Stats viz library
+- plotly::plotly==4.13.0
+- conda-forge::folium>=0.11
+# Storage
+- h5py>=2.10              # standard large storage h5
+- conda-forge::zarr>=2.5
+# GUI
+- conda-forge::tqdm>=4.50              # 
+# Earthy oackages
+- conda-forge::rasterio>=1.1
+# Pytorch
+- pytorch::pytorch
+- pytorch::torchvision
+- pytorch::torchaudio
+- cudatoolkit=10.2
+# pip
+- pip>=20.2
+- pip:
+    # Normalizing Flows Libraries
+    - nflows
+    - pyro-ppl
+    # personal directories
+    - "git+https://mutenroshi.uv.es/gitlab/gonzalo/L8Biome.git#egg=l8cca&subdirectory=package_L8CCA"
+    # Server/Logging
+    - luigi
+    - wandb
+    - plotly
+    # Formatters
+    - black
+    - pylint
+    - isort
+    - flake8
+    - mypy
+    - pytest
+    # JupyterLab recognition
+    - ipykernel
+    - ipywidgets
+    - pyprojroot

@@ -3,14 +3,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='project',
-    version='0.0.0',
-    description='Describe Your Cool Project',
-    author='',
-    author_email='',
+    name="gaussflow",
+    version="0.0.0",
+    description="Gaussianization Flows (RBIG2.0)",
+    author="J. Emmanuel Johnson",
+    author_email="jemanjohnson34@gmail.com",
     # REPLACE WITH YOUR OWN GITHUB PROJECT LINK
-    url='https://github.com/PyTorchLightning/pytorch-lightning-conference-seed',
-    install_requires=['pytorch-lightning'],
+    url="https://github.com/IPL-UV/gaussflow",
+    install_requires=["pytorch-lightning", "pytorch", "nflows"],
     packages=find_packages(),
 )
-
