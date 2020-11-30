@@ -6,6 +6,8 @@ from src.models.gaussianization import get_marginalization_transform
 import os
 from pyprojroot import here
 
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
 root = here(project_files=[".here"])
 import wandb
 
