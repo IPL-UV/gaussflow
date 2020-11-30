@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 from argparse import ArgumentParser
 from pathlib import Path
@@ -5,11 +6,9 @@ from pathlib import Path
 import torch
 from nflows import distributions
 from pyprojroot import here
-from torch.utils.data import TensorDataset, DataLoader
-from pytorch_lightning import Trainer
-from pytorch_lightning import seed_everything
+from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.loggers import WandbLogger
-import multiprocessing
+from torch.utils.data import DataLoader, TensorDataset
 
 from src.data.toy import gen_bimodal_data
 from src.models.dists import get_base_dist
@@ -20,6 +19,7 @@ from src.viz.univariate import plot_hist
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 root = here(project_files=[".here"])
 import tqdm
+
 import wandb
 
 home = str(Path.home())
