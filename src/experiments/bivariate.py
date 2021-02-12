@@ -2,10 +2,9 @@ import multiprocessing
 import os
 from argparse import ArgumentParser
 from pathlib import Path
-from nflows import transforms
 
 import torch
-from nflows import distributions
+from nflows import distributions, transforms
 from pyprojroot import here
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.loggers import WandbLogger
@@ -14,7 +13,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from src.data.toy import get_bivariate_data
 from src.models.dists import get_base_dist
 from src.models.flows import Gaussianization2D
-from src.models.gaussianization import get_marginalization_transform, get_rotation
+from src.models.gaussianization import (get_marginalization_transform,
+                                        get_rotation)
 from src.viz.bivariate import plot_2d_joint, plot_2d_joint_probs
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")

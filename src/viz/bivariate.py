@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 import wandb
 
 sns.set_context(context="talk", font_scale=0.7)
