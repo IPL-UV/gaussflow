@@ -18,6 +18,7 @@ class ConvExp(Transform):
         W: int,
         n_reflections: int = 64,
         convexp_coeff=None,
+        householder: bool = True,
         verbose: bool = False,
     ):
         super(ConvExp, self).__init__()
@@ -44,7 +45,7 @@ class ConvExp(Transform):
         # Again probably not useful.
         # self.post_transform_bias = torch.nn.Parameter(torch.zeros((1, *input_size)))
 
-        if n_channels <= 64:
+        if n_channels <= 64 and not householder:
             self.conv1x1 = Conv1x1(n_channels, H=H, W=W)
         else:
             self.conv1x1 = Conv1x1Householder(
