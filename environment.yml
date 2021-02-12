@@ -36,6 +36,7 @@ dependencies:
     # Normalizing Flows Libraries
     - nflows
     - pyro-ppl
+    - einops
     # personal directories
     - "git+https://mutenroshi.uv.es/gitlab/gonzalo/L8Biome.git#egg=l8cca&subdirectory=package_L8CCA"
     # Server/Logging
