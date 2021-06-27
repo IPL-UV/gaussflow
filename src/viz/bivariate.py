@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 import wandb
 
@@ -54,3 +55,13 @@ def plot_2d_joint_probs(
         plt.savefig(save)
     else:
         plt.show()
+
+
+def generate_2d_grid(data: np.ndarray, n_grid: int = 1_000, buffer: float = 0.01) -> np.ndarray:
+
+    xline = np.linspace(data[:, 0].min() - buffer, data[:, 0].max() + buffer, n_grid)
+    yline = np.linspace(data[:, 1].min() - buffer, data[:, 1].max() + buffer, n_grid)
+    xgrid, ygrid = np.meshgrid(xline, yline)
+    xyinput = np.concatenate([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], axis=1)
+    return xyinput
+

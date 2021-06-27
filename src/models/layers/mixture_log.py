@@ -8,9 +8,10 @@ from nflows.utils import sum_except_batch
 from einops import repeat
 import numpy as np
 from sklearn.mixture import GaussianMixture
+from src.models.layers.mixture import init_mixture_weights
 
-class GaussianMixtureCDF(Fm.InvertibleModule):
-    def __init__(self,dims_in,  n_components=4, eps=1e-5, init_X=None, inv_max_iters: int=100, inv_eps: float=1e-10):
+class LogisticMixtureCDF(Fm.InvertibleModule):
+    def __init__(self,dims_in,  n_components=4, eps=1e-5, init_X=None, inv_max_iters: int=100, inv_eps: float=1e-10, clamp_inverse: bool=True):
         super().__init__(dims_in)
         n_features = dims_in[0][0]
 
@@ -41,14 +42,20 @@ class GaussianMixtureCDF(Fm.InvertibleModule):
         self.eps = eps
         self.inv_max_iters = inv_max_iters
         self.inv_eps = inv_eps
+        self.clamp_inverse = clamp_inverse
 
     def forward(self, x, rev=False, jac=True):
         x = x[0]
         if rev:
 
+            if self.clamp_inverse:
+                x = torch.clamp(x, self.eps, 1 - self.eps)
+
             z = mixture_inv_cdf(x, self.weight_logits, self.loc, self.log_scale)
             log_det = mixture_log_pdf(z,  self.weight_logits, self.loc, self.log_scale)
             # print(f"Mix (Out): {z.min(), z.max()}")
+            log_det = sum_except_batch(log_det)
+            print(z.min(), z.max())
 
         else:
             # print(x.shape)
@@ -73,7 +80,6 @@ class GaussianMixtureCDF(Fm.InvertibleModule):
             log_det = torch.logsumexp(z_log_prob + log_mix_prob, dim=-1) 
             log_det = sum_except_batch(log_det)
 
-
         return (z,), log_det
 
     def output_dims(self, input_dims):
@@ -86,7 +92,9 @@ def mixture_log_pdf(x, weights, means, log_scales):
 
     # Initialize the mixture distribution with the mean/loc and std/scale parameters.
     mix_dist = dist.Categorical(weights)
-    component_dist = dist.Normal(loc=means, scale=log_scales.exp())
+    base_dist = dist.Uniform(0, 1)
+    transforms = [dist.SigmoidTransform().inv, dist.AffineTransform(loc=means, scale=log_scales.exp())]
+    component_dist = dist.TransformedDistribution(base_dist, transforms)
 
     # CDF Distribution
     log_prob = component_dist.log_prob(x)
@@ -102,7 +110,10 @@ def mixture_log_cdf(x, weights, means, log_scales):
 
     # Initialize the mixture distribution with the mean/loc and std/scale parameters.
     mix_dist = dist.Categorical(weights)
-    component_dist = dist.Normal(loc=means, scale=log_scales.exp())
+    base_dist = dist.Uniform(0, 1)
+    transforms = [dist.SigmoidTransform().inv, dist.AffineTransform(loc=means, scale=log_scales.exp())]
+    component_dist = dist.TransformedDistribution(base_dist, transforms)
+
 
     # CDF Distribution
     mix_prob = mix_dist.probs
@@ -111,7 +122,6 @@ def mixture_log_cdf(x, weights, means, log_scales):
     z = torch.sum(z_cdf * mix_prob, dim=-1)
 
     return z
-
 
 def mixture_inv_cdf(x, prior_logits, means, log_scales,
                     eps=1e-10, max_iters=100):
@@ -155,54 +165,3 @@ def mixture_inv_cdf(x, prior_logits, means, log_scales,
         i += 1
 
     return z
-
-def init_mixture_weights(X, n_features, n_components,**kwargs):
-
-
-    prior_logits, means, covariances = init_means_GMM_marginal(
-        X,
-        n_components=n_components,
-        covariance_type="diag",
-        reg_covar=1e-5,
-        **kwargs,
-    )
-    log_scales = softplus_inverse(np.sqrt(covariances))
-
-    prior_logits = np.array(prior_logits)
-    prior_logits = np.log(prior_logits)
-
-    means = np.array(means)
-
-    return prior_logits, means, log_scales
-
-
-def init_means_GMM_marginal(X: np.ndarray, n_components: int, **kwargs):
-    """Initialize means with K-Means
-    
-    Parameters
-    ----------
-    X : np.ndarray
-        (n_samples, n_features)
-    n_components : int
-        the number of clusters for the K-Means
-    
-    Returns
-    -------
-    clusters : np.ndarray
-        (n_features, n_components)"""
-
-    weights, means, covariances = [], [], []
-
-    for iX in X.T:
-        clf = GaussianMixture(n_components=n_components, **kwargs).fit(iX[:, None])
-        weights.append(clf.weights_)
-        means.append(clf.means_.T)
-        covariances.append(clf.covariances_.T)
-
-    return np.vstack(weights), np.vstack(means), np.vstack(covariances)
-
-
-def softplus_inverse(x):
-    return np.log(np.exp(x) - 1.0)
-
-
