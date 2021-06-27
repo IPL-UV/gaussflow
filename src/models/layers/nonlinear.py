@@ -92,29 +92,29 @@ class Logit(Fm.InvertibleModule):
 
     def forward(self, x, rev=False, jac=True):
 
-        x = x[0]
+        inputs = x[0]
 
-        if rev:
-            x = self.temperature * x
-            outputs = torch.sigmoid(x)
-            logabsdet = sum_except_batch(
-                torch.log(self.temperature) - F.softplus(-x) - F.softplus(x)
+        if not rev:
+            inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
+
+            outputs = (1 / self.temperature) * (torch.log(inputs) - torch.log1p(-inputs))
+            logabsdet = - sum_except_batch(
+                torch.log(self.temperature)
+                - F.softplus(-self.temperature * outputs)
+                - F.softplus(self.temperature * outputs)
             )
-            return (outputs,), logabsdet
+
         else:
             # print(x.min(), x.max())
             # if torch.min(x) < 0 or torch.max(x) > 1:
             #     raise InputOutsideDomain()
 
-            x = torch.clamp(x, self.eps, 1 - self.eps)
-
-            outputs = (1 / self.temperature) * (torch.log(x) - torch.log1p(-x))
-            logabsdet = -sum_except_batch(
-                torch.log(self.temperature)
-                - F.softplus(-self.temperature * outputs)
-                - F.softplus(self.temperature * outputs)
+            inputs = self.temperature * inputs
+            outputs = torch.sigmoid(inputs)
+            logabsdet = sum_except_batch(
+                torch.log(self.temperature) - F.softplus(-inputs) - F.softplus(inputs)
             )
-            return (outputs,), logabsdet
+        return (outputs,), logabsdet
 
 
     def output_dims(self, input_dims):
