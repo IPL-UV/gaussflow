@@ -4,9 +4,10 @@ from pytorch_lightning import Trainer
 
 
 class FlowLearnerPlane(pl.LightningModule):
-    def __init__(self, model:torch.nn.Module, cfg):
+    def __init__(self, model:torch.nn.Module, base_dist, cfg):
         super().__init__()
         self.model = model
+        self.base_dist = base_dist
         self.cfg = cfg
 
     def forward(self, x):
@@ -18,8 +19,12 @@ class FlowLearnerPlane(pl.LightningModule):
         z, log_jac_det = self.model(batch)
         
         # calculate the negative log-likelihood of the model with a standard normal prior
-        loss = 0.5*torch.sum(z**2, 1) - log_jac_det
-        loss = loss.mean() / z.shape[1]
+        if self.cfg.loss_fn == "inn":
+            loss = 0.5*torch.sum(z**2, 1) - log_jac_det
+            loss = loss.mean() / z.shape[1]
+        else:
+            loss = self.base_dist.log_prob(z).sum(1) + log_jac_det
+            loss = -loss.mean()
         
         logs = {'train_loss': loss}
         
@@ -31,8 +36,12 @@ class FlowLearnerPlane(pl.LightningModule):
         z, log_jac_det = self.model(batch)
         
         # calculate the negative log-likelihood of the model with a standard normal prior
-        loss = 0.5*torch.sum(z**2, 1) - log_jac_det
-        loss = loss.mean() / z.shape[1]
+        if self.cfg.loss_fn == "inn":
+            loss = 0.5*torch.sum(z**2, 1) - log_jac_det
+            loss = loss.mean() / z.shape[1]
+        else:
+            loss = self.base_dist.log_prob(z).sum(1) + log_jac_det
+            loss = -loss.mean()
         
         logs = {'valid_loss': loss}
         
