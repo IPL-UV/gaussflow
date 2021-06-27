@@ -82,14 +82,39 @@ class Sigmoid(Fm.InvertibleModule):
         return input_dims
 
 class Logit(Fm.InvertibleModule):
-    def __init__(self, dim_in, temperature=1, eps=1e-6, learn_temperature=False):
+    def __init__(self, dim_in, temperature=0.1, eps=1e-5, learn_temperature=False):
         super().__init__(dim_in)
         self.eps = eps
         if learn_temperature:
             self.temperature = nn.Parameter(torch.Tensor([temperature]))
         else:
             self.temperature = torch.Tensor([temperature])
+    # def forward(self, x, rev=False, jac=True):
 
+    #     inputs = x[0]
+
+    #     if not rev:
+            
+    #         # inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
+
+    #         outputs = self.temperature/2 + (1-self.temperature) * inputs
+
+    #         logabsdet = self._log_det_jacobian(outputs)
+
+    #         logabsdet = sum_except_batch(logabsdet)
+
+    #     else:
+    #         # print(x.min(), x.max())
+    #         # if torch.min(x) < 0 or torch.max(x) > 1:
+    #         #     raise InputOutsideDomain()
+    #         outputs = torch.sigmoid(inputs)
+    #         outputs = (outputs - self.temperature/2) / (1-self.temperature)
+
+    #         logabsdet = sum_except_batch(self._log_det_jacobian(outputs))
+    #     return (outputs,), logabsdet
+
+    # def _log_det_jacobian(self, x):
+    #     return torch.log(1-self.temperature) - torch.log(x) - torch.log(1-x)
     def forward(self, x, rev=False, jac=True):
 
         inputs = x[0]

@@ -21,7 +21,7 @@ class LogisticMixtureCDF(Fm.InvertibleModule):
                 torch.Tensor(means), requires_grad=True
             )
             self.log_scale = nn.Parameter(
-                torch.Tensor(0.5 * log_scales), requires_grad=True
+                torch.Tensor(log_scales), requires_grad=True
             )
             self.weight_logits = nn.Parameter(
                 torch.Tensor(prior_logits), requires_grad=True
