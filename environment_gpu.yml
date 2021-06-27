@@ -38,6 +38,7 @@ dependencies:
     - pyro-ppl
     - einops
     # personal directories
+    - "git+https://github.com/VLL-HD/FrEIA.git"
     - "git+https://mutenroshi.uv.es/gitlab/gonzalo/L8Biome.git#egg=l8cca&subdirectory=package_L8CCA"
     # Server/Logging
     - luigi
