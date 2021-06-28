@@ -26,9 +26,12 @@ class FlowLearnerPlane(pl.LightningModule):
             loss = self.base_dist.log_prob(z).sum(1) + log_jac_det
             loss = -loss.mean()
         
-        logs = {'train_loss': loss}
+
         
-        return {'loss': loss, 'log': logs}
+        self.log("train_loss", loss)
+        
+        
+        return loss
     
     def validation_step(self, batch, batch_idx):
         
@@ -42,10 +45,12 @@ class FlowLearnerPlane(pl.LightningModule):
         else:
             loss = self.base_dist.log_prob(z).sum(1) + log_jac_det
             loss = -loss.mean()
+
         
-        logs = {'valid_loss': loss}
+        self.log("valid_loss", loss)
         
-        return {'loss': loss, 'log': logs}
+        
+        return loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.cfg.learning_rate, betas=(0.9, 0.999), weight_decay=1e-4)
