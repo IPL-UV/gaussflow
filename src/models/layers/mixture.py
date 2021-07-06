@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.mixture import GaussianMixture
 
 class GaussianMixtureCDF(Fm.InvertibleModule):
-    def __init__(self,dims_in,  n_components=4, eps=1e-5, init_X=None, inv_max_iters: int=100, inv_eps: float=1e-10):
+    def __init__(self,dims_in,  n_components=4, eps=1e-5, init_X=None, inv_max_iters: int=100, inv_eps: float=1e-10, catch_error: bool=False):
         super().__init__(dims_in)
         n_features = dims_in[0][0]
 
@@ -41,12 +41,20 @@ class GaussianMixtureCDF(Fm.InvertibleModule):
         self.eps = eps
         self.inv_max_iters = inv_max_iters
         self.inv_eps = inv_eps
+        self.catch_error = catch_error
 
     def forward(self, x, rev=False, jac=True):
         x = x[0]
         if rev:
 
-            z = mixture_inv_cdf(x, self.weight_logits, self.loc, self.log_scale)
+            if self.catch_error:
+                if torch.min(x) < 0 or torch.max(x) > 1:
+                    print(x.min(), x.max())
+                    raise InputOutsideDomain()
+
+            x = torch.clamp(x, self.eps, 1 - self.eps)
+
+            z = mixture_inv_cdf(x, self.weight_logits, self.loc, self.log_scale, eps=self.inv_eps)
             log_det = mixture_log_pdf(z,  self.weight_logits, self.loc, self.log_scale)
             # print(f"Mix (Out): {z.min(), z.max()}")
 

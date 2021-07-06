@@ -68,8 +68,8 @@ class FlowLearnerPlane(pl.LightningModule):
         return optimizers, lr_schedulers
 
 class CondFlowLearnerPlane(FlowLearnerPlane):
-    def __init__(self, model:torch.nn.Module, cfg):
-        super().__init__(model, cfg)
+    def __init__(self, model:torch.nn.Module, base_dist, cfg):
+        super().__init__(model, base_dist, cfg)
 
 
 
@@ -81,12 +81,19 @@ class CondFlowLearnerPlane(FlowLearnerPlane):
         z, log_jac_det = self.model(x, c=[y])
         
         # calculate the negative log-likelihood of the model with a standard normal prior
-        loss = 0.5*torch.sum(z**2, 1) - log_jac_det
-        loss = loss.mean() / z.shape[1]
+        if self.cfg.loss_fn == "inn":
+            loss = 0.5*torch.sum(z**2, 1) - log_jac_det
+            loss = loss.mean() / z.shape[1]
+        else:
+            loss = self.base_dist.log_prob(z).sum(1) + log_jac_det
+            loss = -loss.mean()
         
-        logs = {'train_loss': loss}
+
         
-        return {'loss': loss, 'log': logs}
+        self.log("train_loss", loss)
+        
+        
+        return loss
     
     def validation_step(self, batch, batch_idx):
 
@@ -96,9 +103,15 @@ class CondFlowLearnerPlane(FlowLearnerPlane):
         z, log_jac_det = self.model(x, c=[y])
         
         # calculate the negative log-likelihood of the model with a standard normal prior
-        loss = 0.5*torch.sum(z**2, 1) - log_jac_det
-        loss = loss.mean() / z.shape[1]
+        if self.cfg.loss_fn == "inn":
+            loss = 0.5*torch.sum(z**2, 1) - log_jac_det
+            loss = loss.mean() / z.shape[1]
+        else:
+            loss = self.base_dist.log_prob(z).sum(1) + log_jac_det
+            loss = -loss.mean()
+
         
-        logs = {'valid_loss': loss}
+        self.log("valid_loss", loss)
         
-        return {'loss': loss, 'log': logs}
+        
+        return loss
