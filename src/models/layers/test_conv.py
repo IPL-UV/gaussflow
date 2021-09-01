@@ -3,7 +3,7 @@ from typing import Mapping
 import numpy as np
 import torch
 
-from src.models.convolutions.conv import Conv1x1
+from src.models.layers.conv import Conv1x1
 
 
 def test_conv1x1_shape():
@@ -16,25 +16,22 @@ def test_conv1x1_shape():
 
     x = np.random.randn(n_batch, n_channels, H, W)
 
-    # convert to flattened image
-    x = np.reshape(x, (n_batch, H * W * n_channels))
-
     # do transformation
     with torch.no_grad():
 
-        conv_layer = Conv1x1(n_channels=n_channels, H=H, W=W)
+        conv_layer = Conv1x1(dims_in=[n_channels, H, W])
 
-        z, log_abs_det = conv_layer.forward(torch.Tensor(x))
+        z, log_abs_det = conv_layer.forward([torch.Tensor(x)])
 
-        assert z.shape == x.shape
+        assert z[0].shape == x.shape
         assert log_abs_det.shape[0] == x.shape[0]
 
-        x_recon, log_abs_det_r = conv_layer.inverse(z)
+        x_recon, log_abs_det_r = conv_layer.forward(z, rev=True)
 
-        assert x_recon.shape == x.shape
+        assert x_recon[0].shape == x.shape
         assert log_abs_det_r.shape[0] == x.shape[0]
 
-        diff = torch.mean((torch.Tensor(x) - x_recon) ** 2)
+        diff = torch.mean((torch.Tensor(x) - x_recon[0]) ** 2)
         assert diff < 1e-10, f"Diff '{diff}' is larger than 1e-10"
 
     return None

@@ -23,12 +23,21 @@ class FlowCouplingBlock:
 
 def get_coupling_layer(coupling: str = "glow"):
     # coupling transform (GLOW)
-    if coupling == "glow":
+    if coupling == "nice":
+        coupling_transform = Fm.NICECouplingBlock
+
+    elif coupling == "glow":
         coupling_transform = Fm.GLOWCouplingBlock
+
     elif coupling == "realnvp":
         coupling_transform = Fm.RNVPCouplingBlock
-    elif coupling == "nice":
-        coupling_transform = Fm.NICECouplingBlock
+
+    elif coupling == "nsf":
+        raise NotImplementedError
+
+    elif coupling == "flowpp":
+        raise NotImplementedError
+
     else:
         raise ValueError(f"unrecognized coupling transform: {coupling}")
 
