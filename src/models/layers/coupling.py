@@ -1,6 +1,9 @@
 from src.models.layers.mixtures import MixtureGaussianCDFCoupling
 from FrEIA.modules import coupling_layers
-from src.models.layers.rqs import RQSCouplingBlock
+from src.models.layers.splines import (
+    RationalLinearSplineCouplingBlock,
+    RationalQuadraticSplineCouplingBlock,
+)
 from typing import Callable, Union
 import FrEIA.modules as Fm
 
@@ -36,7 +39,10 @@ def get_coupling_layer(coupling: str = "glow"):
         coupling_transform = Fm.GLOWCouplingBlock
 
     elif coupling == "rqs":
-        coupling_transform = RQSCouplingBlock
+        coupling_transform = RationalQuadraticSplineCouplingBlock
+
+    elif coupling == "rls":
+        coupling_transform = RationalLinearSplineCouplingBlock
 
     elif coupling == "flowpp":
         coupling_transform = MixtureGaussianCDFCoupling

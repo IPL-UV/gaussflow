@@ -1,14 +1,5 @@
 import torch
-from torch import nn
 import FrEIA.modules as Fm
-import torch.nn.functional as F
-from torch.distributions.normal import Normal
-import torch.distributions as dist
-from nflows import transforms
-from nflows.utils import sum_except_batch
-from einops import repeat
-import numpy as np
-from sklearn.mixture import GaussianMixture
 
 
 class NFlowsLayer(Fm.InvertibleModule):
@@ -28,12 +19,12 @@ class NFlowsLayer(Fm.InvertibleModule):
         x = x[0]
         if rev:
 
-            z, log_det = self.linear_transform.inverse(x)
+            z, log_det = self.transform.inverse(x)
             # print(f"Mix (Out): {z.min(), z.max()}")
 
         else:
             # print(x.shape)
-            z, log_det = self.linear_transform.forward(x)
+            z, log_det = self.transform.forward(x)
 
         return (z,), log_det
 
@@ -80,3 +71,19 @@ def bisection_inverse(fn, z, init_x, init_lower, init_upper, eps=1e-10, max_iter
         i += 1
 
     return x
+
+
+def share_across_batch(params, batch_size):
+    return params[None, ...].expand(batch_size, *params.shape)
+
+
+class InputOutsideDomain(Exception):
+    """Exception to be thrown when the input to a transform is not within its domain."""
+
+    pass
+
+
+class InverseNotAvailable(Exception):
+    """Exception to be thrown when a transform does not have an inverse."""
+
+    pass
