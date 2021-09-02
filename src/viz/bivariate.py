@@ -11,7 +11,6 @@ def plot_2d_joint(
     data,
     color="blue",
     kind="kde",
-    save=None,
     wandb_logger=None,
     log_name="",
     **kwargs,
@@ -29,18 +28,15 @@ def plot_2d_joint(
     plt.tight_layout()
     if wandb_logger is not None:
         wandb_logger.log({f"{log_name}": wandb.Image(plt)})
-    if save is not None:
-        plt.savefig(save)
-    else:
-        plt.show()
+
+    return None
 
 
 def plot_2d_joint_probs(
     data,
     probs,
-    save=None,
     wandb_logger=None,
-    log_name="",
+    log_name="2d_joint",
     **kwargs,
 ):
     # Plot the Probabilities of the data using colors
@@ -51,17 +47,16 @@ def plot_2d_joint_probs(
     plt.tight_layout()
     if wandb_logger is not None:
         wandb_logger.log({f"{log_name}": wandb.Image(plt)})
-    if save is not None:
-        plt.savefig(save)
-    else:
-        plt.show()
+
+    return fig, ax
 
 
-def generate_2d_grid(data: np.ndarray, n_grid: int = 1_000, buffer: float = 0.01) -> np.ndarray:
+def generate_2d_grid(
+    data: np.ndarray, n_grid: int = 1_000, buffer: float = 0.01
+) -> np.ndarray:
 
     xline = np.linspace(data[:, 0].min() - buffer, data[:, 0].max() + buffer, n_grid)
     yline = np.linspace(data[:, 1].min() - buffer, data[:, 1].max() + buffer, n_grid)
     xgrid, ygrid = np.meshgrid(xline, yline)
     xyinput = np.concatenate([xgrid.reshape(-1, 1), ygrid.reshape(-1, 1)], axis=1)
     return xyinput
-

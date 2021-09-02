@@ -55,7 +55,7 @@ class FlowLearnerPlane(pl.LightningModule):
             weight_decay=1e-4,
         )
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, self.cfg.num_epochs, 0
+            optimizer, self.cfg.n_total_steps, 0
         )
 
         optimizers = [optimizer]

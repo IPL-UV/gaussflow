@@ -1,3 +1,6 @@
+from src.models.layers.mixtures import MixtureGaussianCDFCoupling
+from FrEIA.modules import coupling_layers
+from src.models.layers.rqs import RQSCouplingBlock
 from typing import Callable, Union
 import FrEIA.modules as Fm
 
@@ -26,17 +29,17 @@ def get_coupling_layer(coupling: str = "glow"):
     if coupling == "nice":
         coupling_transform = Fm.NICECouplingBlock
 
-    elif coupling == "glow":
-        coupling_transform = Fm.GLOWCouplingBlock
-
     elif coupling == "realnvp":
         coupling_transform = Fm.RNVPCouplingBlock
 
-    elif coupling == "nsf":
-        raise NotImplementedError
+    elif coupling == "glow":
+        coupling_transform = Fm.GLOWCouplingBlock
+
+    elif coupling == "rqs":
+        coupling_transform = RQSCouplingBlock
 
     elif coupling == "flowpp":
-        raise NotImplementedError
+        coupling_transform = MixtureGaussianCDFCoupling
 
     else:
         raise ValueError(f"unrecognized coupling transform: {coupling}")

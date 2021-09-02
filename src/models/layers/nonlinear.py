@@ -7,12 +7,14 @@ import math
 from nflows.utils import sum_except_batch
 from nflows.transforms.base import InputOutsideDomain
 
+
 class InverseGaussCDF(Fm.InvertibleModule):
     def __init__(self, dim_in, eps=1e-6, catch_error=False):
         super().__init__(dim_in)
         self.eps = eps
         self.base_dist = dist.Normal(loc=torch.zeros(1), scale=torch.ones(1))
         self.catch_error = catch_error
+
     def forward(self, x, rev=False, jac=True):
 
         x = x[0]
@@ -23,7 +25,6 @@ class InverseGaussCDF(Fm.InvertibleModule):
             logabsdet = -self.base_dist.log_prob(z)
             # print(f"ICDF: {z.min(), z.max()}")
 
-            return (z,), logabsdet
         else:
             # print(x.min(), x.max())/
             if self.catch_error:
@@ -37,13 +38,14 @@ class InverseGaussCDF(Fm.InvertibleModule):
 
             # logabsdet = - _stable_log_pdf(z)
             logabsdet = -self.base_dist.log_prob(z)
-            logabsdet = sum_except_batch(logabsdet)
 
-            return (z,), logabsdet
+        logabsdet = sum_except_batch(logabsdet)
 
+        return (z,), logabsdet
 
     def output_dims(self, input_dims):
         return input_dims
+
 
 class Sigmoid(Fm.InvertibleModule):
     def __init__(self, dim_in, temperature=1, eps=1e-6, learn_temperature=False):
@@ -57,7 +59,7 @@ class Sigmoid(Fm.InvertibleModule):
     def forward(self, x, rev=False, jac=True):
 
         if not rev:
-            inputs = self.temperature * inputs
+            inputs = self.temperature * x
             outputs = torch.sigmoid(inputs)
             logabsdet = sum_except_batch(
                 torch.log(self.temperature) - F.softplus(-inputs) - F.softplus(inputs)
@@ -67,9 +69,11 @@ class Sigmoid(Fm.InvertibleModule):
             # if torch.min(inputs) < 0 or torch.max(inputs) > 1:
             #     raise InputOutsideDomain()
 
-            inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
+            inputs = torch.clamp(x, self.eps, 1 - self.eps)
 
-            outputs = (1 / self.temperature) * (torch.log(inputs) - torch.log1p(-inputs))
+            outputs = (1 / self.temperature) * (
+                torch.log(inputs) - torch.log1p(-inputs)
+            )
             logabsdet = -sum_except_batch(
                 torch.log(self.temperature)
                 - F.softplus(-self.temperature * outputs)
@@ -77,24 +81,25 @@ class Sigmoid(Fm.InvertibleModule):
             )
             return (outputs,), logabsdet
 
-
     def output_dims(self, input_dims):
         return input_dims
 
+
 class Logit(Fm.InvertibleModule):
-    def __init__(self, dim_in, temperature=0.1, eps=1e-5, learn_temperature=False):
+    def __init__(self, dim_in, temperature=1.0, eps=1e-5, learn_temperature=False):
         super().__init__(dim_in)
         self.eps = eps
         if learn_temperature:
             self.temperature = nn.Parameter(torch.Tensor([temperature]))
         else:
             self.temperature = torch.Tensor([temperature])
+
     # def forward(self, x, rev=False, jac=True):
 
     #     inputs = x[0]
 
     #     if not rev:
-            
+
     #         # inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
 
     #         outputs = self.temperature/2 + (1-self.temperature) * inputs
@@ -122,12 +127,15 @@ class Logit(Fm.InvertibleModule):
         if not rev:
             inputs = torch.clamp(inputs, self.eps, 1 - self.eps)
 
-            outputs = (1 / self.temperature) * (torch.log(inputs) - torch.log1p(-inputs))
-            logabsdet = - sum_except_batch(
+            outputs = (1 / self.temperature) * (
+                torch.log(inputs) - torch.log1p(-inputs)
+            )
+            logabsdet = (
                 torch.log(self.temperature)
                 - F.softplus(-self.temperature * outputs)
                 - F.softplus(self.temperature * outputs)
             )
+            logabsdet = -sum_except_batch(logabsdet)
 
         else:
             # print(x.min(), x.max())
@@ -141,9 +149,9 @@ class Logit(Fm.InvertibleModule):
             )
         return (outputs,), logabsdet
 
-
     def output_dims(self, input_dims):
         return input_dims
+
 
 def sum_except_batch(x, num_batch_dims=1):
     """Sums all elements of `x` except for the first `num_batch_dims` dimensions."""
@@ -152,7 +160,9 @@ def sum_except_batch(x, num_batch_dims=1):
     reduce_dims = list(range(num_batch_dims, x.ndimension()))
     return torch.sum(x, dim=reduce_dims)
 
+
 _half_log2pi = 0.5 * math.log(2 * math.pi)
+
 
 def _stable_log_pdf(x):
 
