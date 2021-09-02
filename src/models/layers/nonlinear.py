@@ -50,10 +50,9 @@ class InverseGaussCDF(Fm.InvertibleModule):
 class Logit(NFlowsLayer):
     def __init__(self, dim_in, temperature=1.0, eps=1e-5):
 
-        super().__init__(dim_in)
+        transform = NFlowsLogit(temperature=temperature, eps=eps)
 
-        self.transform = NFlowsLogit(temperature=temperature, eps=eps)
-        self.name = "Logit"
+        super().__init__(dim_in, transform=transform, name="logit")
 
 
 # _half_log2pi = 0.5 * math.log(2 * math.pi)
