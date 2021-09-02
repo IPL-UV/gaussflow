@@ -3,7 +3,7 @@ from typing import Mapping
 import numpy as np
 import torch
 
-from src.models.layers.conv import Conv1x1
+from src.models.layers.convolutions import Conv1x1
 
 
 def test_conv1x1_shape():
@@ -16,10 +16,18 @@ def test_conv1x1_shape():
 
     x = np.random.randn(n_batch, n_channels, H, W)
 
+    dims_in = [
+        (
+            n_channels,
+            H,
+            W,
+        )
+    ]
+
     # do transformation
     with torch.no_grad():
 
-        conv_layer = Conv1x1(dims_in=[n_channels, H, W])
+        conv_layer = Conv1x1(dims_in=dims_in)
 
         z, log_abs_det = conv_layer.forward([torch.Tensor(x)])
 

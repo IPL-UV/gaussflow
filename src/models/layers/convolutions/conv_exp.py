@@ -6,102 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import FrEIA.modules as Fm
-from src.models.layers.utils import construct_householder_matrix
-
-
-class Conv1x1(Fm.InvertibleModule):
-    def __init__(self, dims_in: Iterable[Tuple[int]]):
-        super().__init__(dims_in)
-
-        # extract dimensions
-        self.n_channels = dims_in[0][0]
-        self.H = dims_in[0][1]
-        self.W = dims_in[0][2]
-
-        w_np = np.random.randn(self.n_channels, self.n_channels)
-        q_np = np.linalg.qr(w_np)[0]
-
-        self.V = torch.nn.Parameter(torch.from_numpy(q_np.astype("float32")))
-
-    def forward(self, x, rev=False, jac=True):
-        x = x[0]
-        n_samples, *_ = x.size()
-
-        log_jac_det = torch.zeros(n_samples, dtype=x.dtype)
-
-        w = self.V
-        d_ldj = self.H * self.W * torch.slogdet(w)[1]
-
-        if not rev:
-            w = w.view(self.n_channels, self.n_channels, 1, 1)
-
-            z = F.conv2d(x, w, bias=None, stride=1, padding=0, dilation=1, groups=1)
-
-            log_jac_det += d_ldj
-
-        else:
-            w_inv = torch.inverse(w)
-            w_inv = w_inv.view(self.n_channels, self.n_channels, 1, 1)
-
-            z = F.conv2d(x, w_inv, bias=None, stride=1, padding=0, dilation=1, groups=1)
-
-            log_jac_det -= d_ldj
-
-        return (z,), log_jac_det
-
-    def output_dims(self, input_dims):
-        return input_dims
-
-
-class Conv1x1Householder(Fm.InvertibleModule):
-    def __init__(
-        self,
-        dims_in: Iterable[Tuple[int]],
-        n_reflections: int = 10,
-    ):
-        super().__init__(dims_in)
-
-        self.n_reflections = n_reflections
-
-        # extract dimensions
-        self.n_channels = dims_in[0][0]
-        self.H = dims_in[0][1]
-        self.W = dims_in[0][2]
-
-        # initialize matrix
-        v_np = np.random.randn(self.n_reflections, self.n_channels)
-
-        self.V = torch.nn.Parameter(torch.from_numpy(v_np.astype("float32")))
-
-    def forward(self, x, rev=False, jac=True):
-        x = x[0]
-
-        n_samples, *_ = x.size()
-
-        ldj = torch.zeros(n_samples, dtype=x.dtype)
-
-        Q = construct_householder_matrix(self.V)
-
-        #
-
-        if not rev:
-            Q = Q.view(self.n_channels, self.n_channels, 1, 1)
-
-            z = F.conv2d(x, Q, bias=None, stride=1, padding=0, dilation=1, groups=1)
-
-        else:
-            Q_inv = Q.t()
-            Q_inv = Q_inv.view(self.n_channels, self.n_channels, 1, 1)
-
-            z = F.conv2d(x, Q_inv, bias=None, stride=1, padding=0, dilation=1, groups=1)
-
-        return (z,), ldj
-
-    def inverse(self, x, rev=False, jac=True):
-        return self(x, rev=True, jac=jac)
-
-    def output_dims(self, input_dims):
-        return input_dims
+from src.models.layers.convolutions.conv_hh import Conv1x1Householder
+from src.models.layers.convolutions.conv import Conv1x1
 
 
 class ConvExponential(Fm.InvertibleModule):
@@ -111,6 +17,7 @@ class ConvExponential(Fm.InvertibleModule):
         n_reflections: int = 10,
         verbose: bool = False,
         n_terms: int = 6,
+        householder: bool = True,
         spectral_norm: bool = False,
     ):
         super().__init__(dims_in)
@@ -137,7 +44,12 @@ class ConvExponential(Fm.InvertibleModule):
         self.padding = (1, 1)
 
         # add householder convolution
-        self.conv1x1 = Conv1x1Householder(dims_in=dims_in, n_reflections=n_reflections)
+        if householder:
+            self.conv1x1 = Conv1x1Householder(
+                dims_in=dims_in, n_reflections=n_reflections
+            )
+        else:
+            self.conv1x1 = Conv1x1(dims_in=dims_in)
 
         # initialize matrix
         self.n_terms_train = n_terms

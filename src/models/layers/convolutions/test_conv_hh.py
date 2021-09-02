@@ -3,10 +3,10 @@ import FrEIA.framework as Ff
 import numpy as np
 import torch
 
-from src.models.layers.conv import ConvExponential
+from src.models.layers.convolutions import Conv1x1Householder
 
 
-def test_conv_exp_shape():
+def test_ortho_conv1x1_shape():
 
     # create fake data
     n_batch = 128
@@ -16,7 +16,6 @@ def test_conv_exp_shape():
     n_reflections = 10
 
     x = np.random.randn(n_batch, n_channels, H, W)
-
     dims_in = [
         (
             n_channels,
@@ -28,9 +27,7 @@ def test_conv_exp_shape():
     # do transformation
     with torch.no_grad():
 
-        conv_layer = ConvExponential(
-            dims_in=dims_in, n_reflections=n_reflections, n_terms=6
-        )
+        conv_layer = Conv1x1Householder(dims_in=dims_in, n_reflections=n_reflections)
 
         z, log_abs_det = conv_layer.forward([torch.Tensor(x)])
 
@@ -49,7 +46,7 @@ def test_conv_exp_shape():
     return None
 
 
-def test_conv_exp_inn():
+def test_ortho_conv1x1_inn():
 
     # create fake data
     n_batch = 128
@@ -68,7 +65,7 @@ def test_conv_exp_inn():
         inn = Ff.SequenceINN(*n_features)
 
         # append layer
-        inn.append(ConvExponential, n_reflections=n_reflections, n_terms=6)
+        inn.append(Conv1x1Householder, n_reflections=n_reflections)
 
         z, log_abs_det = inn(torch.Tensor(x))
 
@@ -88,5 +85,5 @@ def test_conv_exp_inn():
 
 
 if __name__ == "__main__":
-    test_conv_exp_shape()
-    test_conv_exp_inn()
+    # test_ortho_conv1x1_shape()
+    test_ortho_conv1x1_inn()
