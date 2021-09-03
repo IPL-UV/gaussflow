@@ -50,7 +50,6 @@ class SplitPrior(InvertibleModule):
         return (z,), ldj
 
     def output_dims(self, input_dims):
-        print(input_dims)
         if len(input_dims[0]) == 1:
             d = input_dims[0]
             new_dims = d // 2
@@ -60,7 +59,6 @@ class SplitPrior(InvertibleModule):
 
         else:
             raise ValueError("Errrr")
-        print(new_dims)
         return [
             new_dims,
         ]
