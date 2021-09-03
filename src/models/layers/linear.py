@@ -1,33 +1,35 @@
+from typing import Iterable, List
 import FrEIA.modules as Fm
 from nflows import transforms
+from src.models.layers.utils import NFlowsLayer
 
 
-class LinearLayer(Fm.InvertibleModule):
-    def __init__(self, dims_in, transform: str = "householder", **kwargs):
-        super().__init__(dims_in)
+class LinearLayer(NFlowsLayer):
+    """[summary]
 
+    Args:
+        NFlowsLayer ([type]): [description]
+    """
+
+    def __init__(
+        self, dims_in: Iterable[List[int]], transform: str = "householder", **kwargs
+    ):
+        """[summary]
+
+        Args:
+            dims_in (Iterable[List[int]]): [description]
+            transform (str, optional): The linear transformation to perform. Defaults to "householder".
+        """
+        # this transformation only works for tabular data!
         assert len(dims_in[0]) <= 2
-        self.transform = transform
-        self.name = transform
-        self.linear_transform = create_linear_transform(
+
+        # use nflows package transformations
+        linear_transform = create_linear_transform(
             input_size=dims_in[0][0], transform=transform, **kwargs
         )
 
-    def forward(self, x, rev=False, jac=True):
-        x = x[0]
-        if rev:
-
-            z, log_det = self.linear_transform.inverse(x)
-            # print(f"Mix (Out): {z.min(), z.max()}")
-
-        else:
-            # print(x.shape)
-            z, log_det = self.linear_transform.forward(x)
-
-        return (z,), log_det
-
-    def output_dims(self, input_dims):
-        return input_dims
+        # init original module
+        super().__init__(dims_in, transform=linear_transform, name=transform)
 
 
 def create_linear_transform(
