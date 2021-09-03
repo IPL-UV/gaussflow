@@ -26,13 +26,16 @@ dependencies:
 # Earthy oackages
 - conda-forge::rasterio>=1.1
 # Pytorch
-- pytorch::pytorch
-- pytorch::torchvision
-- pytorch::torchaudio
+- pytorch::pytorch==1.9
+- pytorch::torchvision==0.10
+- pytorch::torchaudio==0.9
 - cudatoolkit=10.2
 # pip
 - pip>=20.2
 - pip:
+    # pytorch
+    - pytorch-lightning
+    - lightning-bolts
     # Normalizing Flows Libraries
     - nflows
     - pyro-ppl
