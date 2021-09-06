@@ -34,7 +34,7 @@ class ImageFlow(pl.LightningModule):
         Otherwise, the ouput metric is bits per dimension (scaled negative log likelihood)
         """
 
-        log_pz = self.prior.log_prob(z)
+        log_pz = self.prior.log_prob(z).to(z.derive)
         log_pz = sum_except_batch(log_pz)
         log_px = log_det_jac + log_pz
         return log_px

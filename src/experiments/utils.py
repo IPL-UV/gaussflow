@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import yaml
+import torch
 
 
 def add_wandb_args(parent_parser):
@@ -16,3 +17,17 @@ def update_args_yaml(args, yaml_file: str):
         opt.update(vars(args))
         args = opt
     return args
+
+
+def gf_propagate(inn, init_X):
+    #     print("Before:", init_X.shape)
+    with torch.no_grad():
+        z, ldj = inn.module_list[-1](
+            [
+                init_X,
+            ]
+        )
+    if isinstance(z, tuple):
+        z = z[0]
+    #     print("After:", z.shape)
+    return z

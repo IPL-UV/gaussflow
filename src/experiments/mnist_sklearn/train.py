@@ -57,6 +57,9 @@ from src.experiments.utils import add_wandb_args, update_args_yaml
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print("Using device: {}".format(device))
 
+# For num_workers > 0 and tensor datasets, bad things happen otherwise.
+torch.multiprocessing.set_start_method("spawn", force=True)
+
 
 def cli_main():
 
@@ -160,7 +163,7 @@ def cli_main():
         min_epochs=2,
         max_epochs=args.max_epochs,
         # progress bar
-        progress_bar_refresh_rate=100,
+        progress_bar_refresh_rate=10,
         # device
         gpus=args.gpus,
         # gradient norm

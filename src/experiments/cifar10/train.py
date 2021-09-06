@@ -21,7 +21,7 @@ import torch.distributions as dist
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.loggers import WandbLogger
-from src.data.mnist_sklearn import discretize, SklearnDigits
+from src.experiments.cifar10.models import get_model_architecture, get_model_args
 from torchvision.transforms import Compose
 from pl_bolts.datamodules import CIFAR10DataModule, TinyCIFAR10DataModule
 
@@ -80,7 +80,7 @@ def cli_main():
     parser = add_wandb_args(parser)
 
     # Model Arguments
-    parser = add_multiscale_cifar10_model_args(parser)
+    parser = get_model_args(parser, "gf")
 
     # Trainer-Specific Arguments
     parser = pl.Trainer.add_argparse_args(parser)
@@ -96,11 +96,15 @@ def cli_main():
     # ------------
     import torchvision
 
+    def discretize(sample):
+        return (sample * 255).to(torch.int32)
+
     train_transforms = torchvision.transforms.Compose(
         [
             # torchvision.transforms.RandomCrop(32, padding=4),
             # torchvision.transforms.RandomHorizontalFlip(),
             torchvision.transforms.ToTensor(),
+            discretize,
         ]
     )
     test_transforms = torchvision.transforms.Compose(
@@ -108,6 +112,7 @@ def cli_main():
             # torchvision.transforms.RandomCrop(32, padding=4),
             # torchvision.transforms.RandomHorizontalFlip(),
             torchvision.transforms.ToTensor(),
+            discretize,
         ]
     )
 
@@ -130,6 +135,7 @@ def cli_main():
     # )
 
     cifar10_dm.prepare_data(download=True)
+    cifar10_dm.setup()
 
     args.n_total_steps = args.max_epochs * cifar10_dm.num_samples
 
@@ -153,17 +159,13 @@ def cli_main():
     # ------------
     # model
     # ------------
-    X_init = torch.randn((64, 3, 32, 32))
+    train_dl = cifar10_dm.train_dataloader()
+    for ix, iy in train_dl:
 
-    inn = create_multiscale_cifar10_model_permute(
-        img_shape=(3, 32, 32),
-        X_init=X_init,
-        n_subflows_1=args.n_subflows_1,
-        n_subflows_2=args.n_subflows_2,
-        n_subflows_3=args.n_subflows_3,
-        # actnorm=args.actnorm,
-        # n_reflections=args.n_reflections,
-    )
+        break
+    X_init = ix
+
+    inn = get_model_architecture(args, X_init, model="gf")
 
     flow_img_cifar10 = ImageFlow(inn, cfg=args, prior=None)
 

@@ -18,8 +18,8 @@ def create_multiscale_cifar10_model_permute(
     img_shape: Tuple,
     X_init: torch.Tensor,
     n_subflows_1: int = 4,
-    n_subflows_2: int = 12,
-    n_subflows_3: int = 12,
+    n_subflows_2: int = 4,
+    n_subflows_3: int = 4,
 ):
 
     n_channels, height, width = img_shape
