@@ -42,8 +42,9 @@ import seaborn as sns
 sns.set_context(context="talk", font_scale=0.7)
 
 from src.experiments.mnist_sklearn.model import (
-    add_simple_mnist_model_args,
+    add_mnist_model_args,
     create_simple_mnist_model,
+    create_multiscale_mnist_model,
 )
 from src.lit_image import ImageFlow
 
@@ -51,6 +52,7 @@ from src.lit_image import ImageFlow
 # LOGGING SETTINGS
 import ml_collections
 import wandb
+from src.experiments.utils import add_wandb_args, update_args_yaml
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 print("Using device: {}".format(device))
@@ -64,14 +66,27 @@ def cli_main():
     # args
     # ------------
     parser = ArgumentParser()
-    parser = pl.Trainer.add_argparse_args(parser)
+
+    # model specific arguments
     parser = ImageFlow.add_model_specific_args(parser)
+
+    # Dataset Arguments
     parser = SklearnDigits.add_ds_args(parser)
-    parser = add_simple_mnist_model_args(parser)
+
+    # Logger arguments
+    parser = add_wandb_args(parser)
+
+    # Model Arguments
+    parser = add_mnist_model_args(parser)
+
+    # Trainer-Specific Arguments
+    parser = pl.Trainer.add_argparse_args(parser)
+
     args = parser.parse_args()
 
-    # wandb_logger = WandbLogger(project=args.wandb_project, entity=args.wandb_entity)
-    # wandb_logger.experiment.config.update(args)
+    wandb_logger = WandbLogger(
+        config=args, project=args.wandb_project, entity=args.wandb_entity
+    )
 
     # ------------
     # data
@@ -106,14 +121,26 @@ def cli_main():
     # ------------
     X_init = train_ds[:16]
 
-    inn = create_simple_mnist_model(
-        img_shape=(1, 8, 8),
-        X_init=X_init,
-        n_subflows=args.n_subflows,
-        actnorm=args.actnorm,
-        n_reflections=args.n_reflections,
-        mask=args.mask,
-    )
+    if args.multiscale:
+        inn = create_multiscale_mnist_model(
+            img_shape=(1, 8, 8),
+            X_init=X_init,
+            n_subflows_1=args.n_subflows_1,
+            n_subflows_2=args.n_subflows_2,
+            actnorm=args.actnorm,
+            n_reflections=args.n_reflections,
+            mask=args.mask,
+        )
+
+    else:
+        inn = create_simple_mnist_model(
+            img_shape=(1, 8, 8),
+            X_init=X_init,
+            n_subflows=args.n_subflows_1,
+            actnorm=args.actnorm,
+            n_reflections=args.n_reflections,
+            mask=args.mask,
+        )
 
     flow_img_mnist = ImageFlow(inn, cfg=args, prior=None)
 
@@ -130,16 +157,16 @@ def cli_main():
     # ========================
     trainer = pl.Trainer(
         # epochs
-        min_epochs=5,
+        min_epochs=2,
         max_epochs=args.max_epochs,
         # progress bar
         progress_bar_refresh_rate=100,
         # device
-        gpus=0,
+        gpus=args.gpus,
         # gradient norm
         gradient_clip_val=args.gradient_clip_val,
         gradient_clip_algorithm=args.gradient_clip_algorithm,
-        # logger=wandb_logger,
+        logger=wandb_logger,
     )
 
     trainer.fit(

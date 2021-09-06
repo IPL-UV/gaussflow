@@ -1,0 +1,3 @@
+# trainer args
+gpus: 0
+max_epochs: 4

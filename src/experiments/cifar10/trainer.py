@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
-from torchvision.datasets.mnist import MNIST
+from torchvision.datasets.cifar import CIFAR10
 from nflows.utils import sum_except_batch
 import numpy as np
 
@@ -104,7 +104,7 @@ class ImageFlow(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         # segment batch
-        x = batch
+        x, _ = batch
 
         # Normalizing flows are trained by maximum likelihood => return bpd
         z, log_det_jac = self.model(x)
@@ -118,7 +118,7 @@ class ImageFlow(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # segment batch
-        x = batch
+        x, _ = batch
 
         # Normalizing flows are trained by maximum likelihood => return bpd
         z, log_det_jac = self.model(x)
@@ -130,11 +130,13 @@ class ImageFlow(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
+        x, _ = batch
+
         img_log_prob = []
 
         for _ in range(self.cfg.importance_samples):
             # pass to INN and get transformed variable z and log Jacobian determinant
-            z, log_det_jac = self.model(batch, rev=False)
+            z, log_det_jac = self.model(x, rev=False)
 
             # calculate the negative log-likelihood of the model with a standard normal prior
             img_log_prob.append(self.log_prob(z, log_det_jac))
@@ -166,47 +168,3 @@ class ImageFlow(pl.LightningModule):
         parser.add_argument("--importance_samples", type=int, default=8)
         parser.add_argument("--temperature", type=float, default=1.0)
         return parser
-
-
-def cli_main():
-    pl.seed_everything(1234)
-
-    # ------------
-    # args
-    # ------------
-    parser = ArgumentParser()
-    parser.add_argument("--batch_size", default=32, type=int)
-    parser = pl.Trainer.add_argparse_args(parser)
-    parser = ImageFlow.add_model_specific_args(parser)
-    args = parser.parse_args()
-
-    # ------------
-    # data
-    # ------------
-    dataset = MNIST("", train=True, download=True, transform=transforms.ToTensor())
-    mnist_test = MNIST("", train=False, download=True, transform=transforms.ToTensor())
-    mnist_train, mnist_val = random_split(dataset, [55000, 5000])
-
-    train_loader = DataLoader(mnist_train, batch_size=args.batch_size)
-    val_loader = DataLoader(mnist_val, batch_size=args.batch_size)
-    test_loader = DataLoader(mnist_test, batch_size=args.batch_size)
-
-    # ------------
-    # model
-    # ------------
-    model = ImageFlow(args.hidden_dim, args.learning_rate)
-
-    # ------------
-    # training
-    # ------------
-    trainer = pl.Trainer.from_argparse_args(args)
-    trainer.fit(model, train_loader, val_loader)
-
-    # ------------
-    # testing
-    # ------------
-    test_result = trainer.test(model, test_dataloaders=test_loader)
-
-
-if __name__ == "__main__":
-    cli_main()
