@@ -1,0 +1,1 @@
+from nflows.nn.nets import ResidualNet
