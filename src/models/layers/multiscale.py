@@ -33,11 +33,11 @@ class SplitPrior(InvertibleModule):
         x = x[0]
 
         if rev:
-            x_split = self.prior.sample(x.shape)
+            x_split = self.prior.sample(x.shape).to(x.device)
 
             z = torch.cat([x, x_split], dim=1)
 
-            ldj = self.prior.log_prob(x_split)
+            ldj = -self.prior.log_prob(x_split)
 
         else:
             # split inputs
@@ -133,9 +133,8 @@ class GeneralizedSplitPrior(InvertibleModule):
             x_split = self.prior.sample(tuple(input_shape))
 
             z = torch.cat([x, x_split], dim=1)
-            print(z.shape)
 
-            ldj = self.prior.log_prob(x_split)
+            ldj = -self.prior.log_prob(x_split)
 
         else:
             # split inputs

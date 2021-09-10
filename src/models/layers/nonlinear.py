@@ -13,7 +13,7 @@ class InverseGaussCDF(Fm.InvertibleModule):
     def __init__(self, dim_in, eps=1e-6, catch_error=False):
         super().__init__(dim_in)
         self.eps = eps
-        self.base_dist = dist.Normal(loc=torch.zeros(1), scale=torch.ones(1))
+        self.base_dist = dist.Normal(0.0, 1.0)
         self.catch_error = catch_error
 
     def forward(self, x, rev=False, jac=True):

@@ -7,6 +7,7 @@ from nflows.transforms.splines.rational_quadratic import (
     DEFAULT_MIN_DERIVATIVE,
 )
 from src.models.layers.splines.rational_linear import PiecewiseRationalLinearCDF
+from nflows.utils import sum_except_batch
 
 
 class RationalQuadraticSplines(Fm.InvertibleModule):
@@ -45,6 +46,8 @@ class RationalQuadraticSplines(Fm.InvertibleModule):
             # backward operation
             x, log_jac_det = self.transform.inverse(x)
 
+        log_jac_det = sum_except_batch(log_jac_det)
+
         return (x,), log_jac_det
 
     def output_dims(self, input_dims):
@@ -66,7 +69,7 @@ class RationalLinearSplines(RationalQuadraticSplines):
         super().__init__(dims_in)
 
         self.transform = PiecewiseRationalLinearCDF(
-            shape=dims_in[0],
+            shape=dims_in,
             num_bins=num_bins,
             tails=tails,
             tail_bound=tail_bound,

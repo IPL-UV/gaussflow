@@ -38,6 +38,9 @@ def get_coupling_layer(coupling: str = "glow"):
     elif coupling == "glow":
         coupling_transform = Fm.GLOWCouplingBlock
 
+    elif coupling == "affine":
+        coupling_transform = Fm.AffineCouplingOneSided
+
     elif coupling == "rqs":
         coupling_transform = RationalQuadraticSplineCouplingBlock
 

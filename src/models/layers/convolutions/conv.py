@@ -27,7 +27,7 @@ class Conv1x1(Fm.InvertibleModule):
         x = x[0]
         n_samples, *_ = x.size()
 
-        log_jac_det = torch.zeros(n_samples, dtype=x.dtype)
+        log_jac_det = torch.zeros(n_samples, dtype=x.dtype, device=x.device)
 
         w = self.V
         d_ldj = self.H * self.W * torch.slogdet(w)[1]

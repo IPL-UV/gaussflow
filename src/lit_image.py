@@ -10,6 +10,7 @@ from torchvision import transforms
 from torchvision.datasets.mnist import MNIST
 from nflows.utils import sum_except_batch
 import numpy as np
+import math
 
 
 class ImageFlow(pl.LightningModule):
@@ -27,6 +28,60 @@ class ImageFlow(pl.LightningModule):
     def forward(self, x, rev=False):
         return self.model(x, rev=rev)
 
+    def training_step(self, batch, batch_idx):
+        # segment batch
+        x = batch
+
+        # Normalizing flows are trained by maximum likelihood => return bpd
+        z, log_det_jac = self.model(x)
+
+        # get loss (bpd)
+        loss = self.loss_inn(z, log_det_jac)
+
+        self.log("train_inn", loss, prog_bar=True)
+        self.log("train_nll", self.loss_nll(z, log_det_jac), prog_bar=True)
+        self.log("train_bpd", self.loss_bpd(z, log_det_jac), prog_bar=True)
+
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        # segment batch
+        x = batch
+
+        # Normalizing flows are trained by maximum likelihood => return bpd
+        z, log_det_jac = self.model(x)
+
+        # get loss (bpd)
+        loss = self.loss_inn(z, log_det_jac)
+
+        self.log("val_inn", loss, prog_bar=True)
+        self.log("val_nll", self.loss_nll(z, log_det_jac), prog_bar=True)
+
+        return loss
+
+    def test_step(self, batch, batch_idx):
+
+        img_log_prob = []
+
+        for _ in range(self.cfg.importance_samples):
+            # pass to INN and get transformed variable z and log Jacobian determinant
+            z, log_det_jac = self.model(batch, rev=False)
+
+            # calculate the negative log-likelihood of the model with a standard normal prior
+            img_log_prob.append(self.log_prob(z, log_det_jac))
+
+        # stack images together
+        img_log_prob = torch.stack(img_log_prob, dim=-1)
+
+        img_log_prob = stable_avg_log_probs(img_log_prob)
+        # Calculate final bpd
+        bpd = -img_log_prob * np.log2(np.exp(1)) / np.prod(batch[0].shape[1:])
+        bpd = bpd.mean()
+
+        self.log("test_bpd", bpd)
+
+        return bpd
+
     def log_prob(self, z: torch.Tensor, log_det_jac: torch.Tensor) -> torch.Tensor:
         """
         Given a batch of images, return the likelihood of those.
@@ -34,25 +89,29 @@ class ImageFlow(pl.LightningModule):
         Otherwise, the ouput metric is bits per dimension (scaled negative log likelihood)
         """
 
-        log_pz = self.prior.log_prob(z).to(z.derive)
+        log_pz = self.prior.log_prob(z)
         log_pz = sum_except_batch(log_pz)
-        log_px = log_det_jac + log_pz
-        return log_px
+        log_pz += sum_except_batch(log_det_jac)
+        return log_pz
 
     def loss_inn(self, z, log_det_jac):
-        loss = 0.5 * torch.sum(z ** 2, [1, 2, 3]) - log_det_jac
-        loss = loss.mean() / z.shape[1]
+        z = torch.mean(z ** 2) / 2
+        loss = z - torch.mean(log_det_jac) / self.cfg.n_total_dims
         return loss
 
     def loss_nll(self, z, log_det_jac):
-        loss = -self.log_prob(z, log_det_jac)
-        return loss.mean()
+        loss = self.log_prob(z, log_det_jac)
+        return -loss.mean()
 
     def loss_bpd(self, z, log_det_jac):
-        # calculate standard nll
-        nll = -self.log_prob(z, log_det_jac)
+
+        log_pz = self.prior.log_prob(z)
+        log_pz = sum_except_batch(log_pz)
+        log_pz += sum_except_batch(log_det_jac)
+
         # scale loss by bits-per-dim
-        loss = nll * np.log2(np.exp(1)) / np.prod(z.shape[1:])
+        loss = -log_pz * np.log2(np.exp(1)) / np.prod(z.shape[1:])
+        # loss = nll / (math.log(2) * np.prod(z.shape[1:]))
 
         return loss.mean()
 
@@ -98,56 +157,9 @@ class ImageFlow(pl.LightningModule):
                 optimizer, self.cfg.n_total_steps, 0
             )
         else:
-            scheduler = None
+            return [optimizer]
 
         return [optimizer], [scheduler]
-
-    def training_step(self, batch, batch_idx):
-        # segment batch
-        x = batch
-
-        # Normalizing flows are trained by maximum likelihood => return bpd
-        z, log_det_jac = self.model(x)
-
-        # get loss (bpd)
-        loss = self.loss_bpd(z, log_det_jac)
-
-        self.log("train_bpd", loss, prog_bar=True)
-
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        # segment batch
-        x = batch
-
-        # Normalizing flows are trained by maximum likelihood => return bpd
-        z, log_det_jac = self.model(x)
-
-        # get loss (bpd)
-        loss = self.loss_bpd(z, log_det_jac)
-
-        self.log("val_bpd", loss, prog_bar=True)
-
-    def test_step(self, batch, batch_idx):
-
-        img_log_prob = []
-
-        for _ in range(self.cfg.importance_samples):
-            # pass to INN and get transformed variable z and log Jacobian determinant
-            z, log_det_jac = self.model(batch, rev=False)
-
-            # calculate the negative log-likelihood of the model with a standard normal prior
-            img_log_prob.append(self.log_prob(z, log_det_jac))
-
-        # stack images together
-        img_log_prob = torch.stack(img_log_prob, dim=-1)
-
-        img_log_prob = stable_avg_log_probs(img_log_prob)
-        # Calculate final bpd
-        bpd = -img_log_prob * np.log2(np.exp(1)) / np.prod(batch[0].shape[1:])
-        bpd = bpd.mean()
-
-        self.log("test_bpd", bpd)
 
     @staticmethod
     def add_model_specific_args(parent_parser):

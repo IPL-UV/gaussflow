@@ -25,7 +25,7 @@ class LogEvalImagesCallback(Callback):
         self.num_y = num_y
         self.n_features = n_features
 
-    def on_validation_epoch_start(self, trainer, pl_module) -> None:
+    def on_validation_epoch_end(self, trainer, pl_module) -> None:
         """Called when the val epoch begins.
         Logs the images in a table every 'img_log_freq' epochs.
         """
@@ -47,7 +47,7 @@ class LogEvalImagesCallback(Callback):
             fig_gaussianzied = wandb.Image(fig)
 
             # create table
-            my_data = [fig_gaussianzied, fig_samples]
+            my_data = [[fig_gaussianzied, fig_samples]]
 
             # create a wandb.Table() with corresponding columns
             columns = ["latent", "samples"]

@@ -113,6 +113,7 @@ def mixture_gauss_cdf(x, weights, means, log_scales):
 
     # CDF Distribution
     mix_prob = mix_dist.probs
+    # print(x.shape, x.min(), x.max())
     z_cdf = component_dist.cdf(x)
     # print(z_cdf.shape, mix_prob.shape)
     z = torch.sum(z_cdf * mix_prob, dim=-1)

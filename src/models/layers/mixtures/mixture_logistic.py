@@ -28,6 +28,9 @@ class LogisticMixtureCDF(Fm.InvertibleModule):
             prior_logits, means, log_scales = init_mixture_weights(
                 init_X, n_features=init_X.shape[1], n_components=n_components
             )
+            print(prior_logits.min(), prior_logits.max())
+            print(means.min(), means.max())
+            print(log_scales.min(), log_scales.max())
             self.loc = nn.Parameter(torch.Tensor(means), requires_grad=True)
             self.log_scale = nn.Parameter(torch.Tensor(log_scales), requires_grad=True)
             self.weight_logits = nn.Parameter(

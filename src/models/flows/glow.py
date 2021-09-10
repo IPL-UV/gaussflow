@@ -7,12 +7,13 @@ from src.models.layers.dequantization import UniformDequantization
 from src.models.layers.convolutions import Conv1x1, Conv1x1Householder, ConvExponential
 
 
-def append_realnvp_coupling_block_image(
+def append_glow_coupling_block_image(
     inn,
     conditioner: Callable,
-    n_reflections=10,
     actnorm: bool = False,
     mask: str = "checkerboard",
+    permute: bool = True,
+    n_reflections=10,
 ):
     # =======================
     # checkboard downsampling
@@ -25,14 +26,12 @@ def append_realnvp_coupling_block_image(
         inn.append(
             Fm.HaarDownsampling,
         )
-    else:
-        raise ValueError(f"Unrecognized masking method: {mask}")
 
     # =================
     # RealNVP Coupling
     # =================
     inn.append(
-        Fm.RNVPCouplingBlock,
+        Fm.GLOWCouplingBlock,
         subnet_constructor=conditioner,
     )
     # Upsampling
@@ -44,8 +43,6 @@ def append_realnvp_coupling_block_image(
         inn.append(
             Fm.HaarUpsampling,
         )
-    else:
-        raise ValueError(f"Unrecognized masking method: {mask}")
 
     # =========
     # act norm
@@ -57,7 +54,9 @@ def append_realnvp_coupling_block_image(
     # ===============
     # 1x1 Convolution with householder parameterization
     # ===============
-    if n_reflections is not None:
+    if permute:
+        inn.append(Fm.PermuteRandom)
+    elif n_reflections is not None:
         inn.append(
             Conv1x1Householder,
             n_reflections=n_reflections,

@@ -29,5 +29,7 @@ def gf_propagate(inn, init_X):
         )
     if isinstance(z, tuple):
         z = z[0]
+    if isinstance(z, list):
+        z = z[0]
     #     print("After:", z.shape)
     return z

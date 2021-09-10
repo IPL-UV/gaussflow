@@ -34,7 +34,7 @@ class Conv1x1Householder(Fm.InvertibleModule):
 
         n_samples, *_ = x.size()
 
-        ldj = torch.zeros(n_samples, dtype=x.dtype)
+        ldj = torch.zeros(n_samples, dtype=x.dtype, device=x.device)
 
         Q = construct_householder_matrix(self.V)
 
