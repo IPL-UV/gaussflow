@@ -1,4 +1,4 @@
-name: gaussflow-gpu
+name: survae
 channels:
 - defaults
 - pytorch
@@ -42,10 +42,8 @@ dependencies:
     - einops
     # personal directories
     - "git+https://github.com/VLL-HD/FrEIA.git"
-    - "git+https://mutenroshi.uv.es/gitlab/gonzalo/L8Biome.git#egg=l8cca&subdirectory=package_L8CCA"
     - "git+https://github.com/earthpulse/pytorch_eo.git"
     # Server/Logging
-    - luigi
     - wandb
     - plotly
     # Formatters
